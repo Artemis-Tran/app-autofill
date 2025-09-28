@@ -1,0 +1,19 @@
+{
+  "name": "app-autofill",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@types/chrome": "^0.1.12",
+    "esbuild": "^0.25.10",
+    "shx": "^0.4.0",
+    "typescript": "^5.9.2"
+  }
+}
