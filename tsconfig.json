@@ -9,8 +9,8 @@
     // See also https://aka.ms/tsconfig/module
     "module": "esnext",
     "target": "es2022",
-    "types": [],
-    "lib": ["es2022", "dom"],
+    "types": ["chrome"],
+    "lib": ["es2022", "dom", "DOM.Iterable","WebWorker"],
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],

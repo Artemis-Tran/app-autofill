@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "shx rm -rf dist && esbuild src/background.ts src/content.ts src/popup/main.ts --bundle --outdir=dist --target=chrome120 && shx cp src/manifest.json dist/ && shx cp src/popup/index.html dist/popup.html && shx mkdir -p dist/icons && shx cp assets/icons/* dist/icons/",
+    "dev": "npm run build -- --watch",
+    "zip": "cd dist && shx rm -f ../app-autofill.zip && zip -r ../app-autofill.zip ."
   },
   "keywords": [],
   "author": "",
