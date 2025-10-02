@@ -18,6 +18,19 @@ type AnyObj = Record<string, any>;
 const norm = (s: string | null | undefined) =>
   (s ?? "").toLowerCase().replace(/\s+/g, " ").trim();
 
+function isFormEl(n: any): n is HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement {
+  return n instanceof HTMLInputElement || n instanceof HTMLSelectElement || n instanceof HTMLTextAreaElement;
+}
+
+document.addEventListener("input", (e) => {
+  const t = e.target as any;
+  if (isFormEl(t)) { t.dataset.userEdited = "1"; t.dataset.autofilled = ""; }
+}, true);
+document.addEventListener("change", (e) => {
+  const t = e.target as any;
+  if (isFormEl(t)) { t.dataset.userEdited = "1"; t.dataset.autofilled = ""; }
+}, true);
+
 /**
  * Finds the text of a label associated with a form element.
  * It checks for text from various sources in a specific order:
@@ -90,7 +103,14 @@ function matchKey(el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
  * @returns The property value, or undefined if not found.
  */
 function get(obj: AnyObj, path: string): unknown {
-  return path.split(".").reduce((o, k) => o?.[k], obj);
+  if (path === "basics._fullName") {
+    const first = String(obj?.basics?.firstName ?? "").trim();
+    const last  = String(obj?.basics?.lastName  ?? "").trim();
+    const full = [first, last].filter(Boolean).join(" ");
+    return full || undefined;
+  }
+  // default: read directly
+  return path.split(".").reduce<any>((o, k) => o?.[k], obj);
 }
 
 /**
@@ -101,6 +121,7 @@ function get(obj: AnyObj, path: string): unknown {
  * @returns True if the value was set successfully, false otherwise.
  */
 function setValue(el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement, value: any): boolean {
+  if ((el as any).dataset?.userEdited === "1") return false;
   const v = String(value);
   if (el instanceof HTMLInputElement && (el.type === "checkbox" || el.type === "radio")) {
     const group = document.querySelectorAll<HTMLInputElement>(`input[name="${CSS.escape(el.name)}"]`);
@@ -166,6 +187,7 @@ async function fill(profile: AnyObj, allowDemo: boolean) {
      .filter(el => (el as HTMLElement).offsetParent !== null);
   let n = 0;
   for (const el of inputs) {
+    if ((el as any).dataset?.userEdited === "1") continue;
     const key = matchKey(el);
     if (!key) continue;
     // Skip demographic fields if not allowed
@@ -210,9 +232,11 @@ let observer: MutationObserver | null = null;
 function watchForChanges(profile: AnyObj, allowDemo: boolean) {
   const run = scheduleFill(profile, allowDemo);
   observer?.disconnect();
-  observer = new MutationObserver(run);
+  observer = new MutationObserver((muts) => {
+    if (muts.some(m => m.addedNodes && m.addedNodes.length > 0)) run();
+  });
   observer.observe(document.documentElement, { childList: true, subtree: true });
-  run(); // Run an initial fill
+  run(); 
 }
 
 /**

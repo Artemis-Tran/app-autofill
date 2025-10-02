@@ -1,6 +1,7 @@
 export const FIELD_ALIASES: Record<string, RegExp[]> = {
   "basics.firstName": [/first\s*name|given\s*name|\bfname\b/i],
   "basics.lastName":  [/last\s*name|family\s*name|\blname\b/i],
+   "basics._fullName": [/full\s*name/i,/\bname\b/i],
   "basics.email":     [/e-?mail|email\s*address/i],
   "basics.phone":     [/phone|mobile|cell/i],
   "address.line1":    [/address( line)?\s*1|street|addr1/i],
@@ -11,7 +12,7 @@ export const FIELD_ALIASES: Record<string, RegExp[]> = {
   "links.website":    [/website|portfolio|personal\s*site/i],
   "links.github":     [/github/i],
   "links.linkedin":   [/linkedin/i],
-  "workAuth.usWorkAuthorization": [/work\s*authorization|authorized\s*to\s*work/i],
+  "workAuth.usWorkAuthorization": [/work\s*authorization|authorized\s*to\s*work|legally\s*authorized\s*to\s*work/i],
   "workAuth.needsSponsorship": [/sponsorship|will\s*you\s*require/i],
   "workAuth.usPerson": [/u\.?s\.?\s*person|export\s*controlled/i],
   "demographics.race": [/race|ethnicity/i],
