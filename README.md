@@ -13,9 +13,10 @@ This is a browser extension that automatically fills out web forms based on a JS
 ## Installation
 
 1.  Clone this repository to your local machine.
-2.  Open your browser's extension management page (e.g., `chrome://extensions` in Google Chrome).
-3.  Enable "Developer mode."
-4.  Click "Load unpacked" and select the `src` directory from this project.
+2.  From the root, run `npm run build` to build the extension.
+3.  Open your browser's extension management page (e.g., `chrome://extensions` in Google Chrome).
+4.  Enable "Developer mode."
+5.  Click "Load unpacked" and select the `dist` directory from this project.
 
 ## How to Use
 
