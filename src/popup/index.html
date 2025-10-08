@@ -1,21 +1,236 @@
 <!doctype html>
 <html>
-  <body style="font-family: system-ui; width: 340px; padding: 10px;">
-    <h3 style="margin:0 0 8px;">Application Autofill</h3>
+  <body style="font-family: system-ui; width: 360px; padding: 12px;">
+    <h3 style="margin:0 0 10px;">Application Autofill</h3>
 
-    <label>Profile JSON</label>
-    <textarea id="profile" style="width:100%;height:160px;"></textarea>
+    <form id="profileForm">
+      <!-- Basics -->
+      <fieldset style="border:1px solid #ddd;padding:8px;border-radius:8px;">
+        <legend style="padding:0 6px;color:#555;">Basics</legend>
+        <label style="display:block;margin-bottom:6px;">
+          First name
+          <input id="firstName" type="text" style="width:100%;">
+        </label>
+        <label style="display:block;margin-bottom:6px;">
+          Last name
+          <input id="lastName" type="text" style="width:100%;">
+        </label>
+        <label style="display:block;margin-bottom:6px;">
+          Email
+          <input id="email" type="email" style="width:100%;">
+        </label>
+        <label style="display:block;margin-bottom:6px;">
+          Phone
+          <input id="phone" type="tel" style="width:100%;">
+        </label>
+      </fieldset>
 
-    <label style="display:block;margin-top:8px;">
-      <input id="allowDemo" type="checkbox"> Include demographics
-    </label>
+      <!-- Address -->
+      <fieldset style="border:1px solid #ddd;padding:8px;margin-top:10px;border-radius:8px;">
+        <legend style="padding:0 6px;color:#555;">Address</legend>
+        <label style="display:block;margin-bottom:6px;">
+          Line 1
+          <input id="line1" type="text" style="width:100%;">
+        </label>
+        <label style="display:block;margin-bottom:6px;">
+          Line 2
+          <input id="line2" type="text" style="width:100%;">
+        </label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <label>
+            City
+            <input id="city" type="text" style="width:100%;">
+          </label>
+          <label>
+            State
+            <input id="state" type="text" style="width:100%;">
+          </label>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;">
+          <label>
+            Postal code
+            <input id="postalCode" type="text" style="width:100%;">
+          </label>
+          <label>
+            Country
+            <input id="country" type="text" style="width:100%;" placeholder="US">
+          </label>
+        </div>
+      </fieldset>
 
-    <div style="display:flex;gap:8px;margin-top:10px;">
-      <button id="save">Save</button>
-      <button id="fill">Fill this page</button>
-    </div>
+      <!-- Links -->
+      <fieldset style="border:1px solid #ddd;padding:8px;margin-top:10px;border-radius:8px;">
+        <legend style="padding:0 6px;color:#555;">Links</legend>
+        <div id="linksContainer" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <button id="addLink" type="button" style="margin-top:6px;">+ Add link</button>
+      </fieldset>
+
+      <!-- Education -->
+      <fieldset style="border:1px solid #ddd;padding:8px;margin-top:10px;border-radius:8px;">
+        <legend style="padding:0 6px;color:#555;">Education</legend>
+        <div id="educationContainer" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <button id="addEducation" type="button" style="margin-top:6px;">+ Add education</button>
+      </fieldset>
+
+      <!-- Work Experience -->
+      <fieldset style="border:1px solid #ddd;padding:8px;margin-top:10px;border-radius:8px;">
+        <legend style="padding:0 6px;color:#555;">Work Experience</legend>
+        <div id="workContainer" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <button id="addWork" type="button" style="margin-top:6px;">+ Add role</button>
+      </fieldset>
+      <!-- Demographics (opt-in via checkbox below) -->
+      <fieldset style="border:1px solid #ddd;padding:8px;margin-top:10px;border-radius:8px;">
+        <legend style="padding:0 6px;color:#555;">Demographics (optional)</legend>
+
+        <label style="display:block;margin-bottom:6px;">
+          Work authorization
+          <select id="demoWorkAuth" style="width:100%;">
+            <option value="">Select</option>
+            <option>U.S. Citizen</option>
+            <option>U.S. Permanent Resident (Green Card)</option>
+            <option>H-1B</option>
+            <option>F-1 (CPT/OPT)</option>
+            <option>Other Visa</option>
+            <option>Not authorized</option>
+          </select>
+        </label>
+
+        <label style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+          <input id="demoNeedsSponsorship" type="checkbox">
+          I will require sponsorship now or in the future
+        </label>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <label>Gender
+            <select id="demoGender" style="width:100%;">
+              <option value="">Prefer not to say</option>
+              <option>Male</option>
+              <option>Female</option>
+              <option>Non-binary</option>
+              <option>Transgender</option>
+              <option>Other</option>
+            </select>
+          </label>
+          <label>Pronouns
+            <input id="demoPronouns" type="text" style="width:100%;" placeholder="she/her, he/him, they/them">
+          </label>
+        </div>
+
+        <div style="margin-top:6px;">
+          <div style="font-size:12px;color:#666;margin-bottom:4px;">Ethnicity / Race (select all that apply)</div>
+          <div id="demoRaceGroup" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <label><input type="checkbox" value="Asian"> Asian</label>
+            <label><input type="checkbox" value="Black or African American"> Black or African American</label>
+            <label><input type="checkbox" value="Hispanic or Latino"> Hispanic or Latino</label>
+            <label><input type="checkbox" value="White"> White</label>
+            <label><input type="checkbox" value="Native Hawaiian or Other Pacific Islander"> Native Hawaiian or Other Pacific Islander</label>
+            <label><input type="checkbox" value="American Indian or Alaska Native"> American Indian or Alaska Native</label>
+            <label><input type="checkbox" value="Middle Eastern or North African"> Middle Eastern or North African</label>
+            <label><input type="checkbox" value="Other"> Other</label>
+            <label><input type="checkbox" value="Prefer not to say"> Prefer not to say</label>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;">
+          <label>Veteran status
+            <select id="demoVeteran" style="width:100%;">
+              <option value="">Prefer not to say</option>
+              <option>Not a protected veteran</option>
+              <option>Protected veteran</option>
+            </select>
+          </label>
+          <label>Disability
+            <select id="demoDisability" style="width:100%;">
+              <option value="">Prefer not to say</option>
+              <option>No disability</option>
+              <option>Has a disability</option>
+            </select>
+          </label>
+        </div>
+      </fieldset>
+
+      <details style="margin-top:10px;">
+        <summary style="cursor:pointer;">Advanced JSON (syncs with form)</summary>
+        <textarea id="profileJson" style="width:100%;height:140px;margin-top:8px;font-family:ui-monospace, SFMono-Regular, Menlo, monospace;"></textarea>
+        <div style="font-size:12px;color:#777;margin-top:4px;">Edits here will update the form on blur.</div>
+      </details>
+
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button id="save" type="button">Save</button>
+        <button id="fill" type="button">Fill this page</button>
+      </div>
+    </form>
 
     <div id="status" style="margin-top:8px;color:#555;"></div>
+
+    <!-- Row templates -->
+    <template id="linkRowTmpl">
+      <div class="row link-row" style="border:1px solid #eee;border-radius:8px;padding:8px;">
+        <div style="display:grid;grid-template-columns:1fr 2fr auto;gap:8px;align-items:end;">
+          <label>Label
+            <input class="link-label" type="text" style="width:100%;" placeholder="LinkedIn">
+          </label>
+          <label>URL
+            <input class="link-url" type="url" style="width:100%;" placeholder="https://…">
+          </label>
+          <button type="button" data-remove style="height:32px;">Remove</button>
+        </div>
+      </div>
+    </template>
+
+    <template id="eduRowTmpl">
+      <div class="row edu-row" style="border:1px solid #eee;border-radius:8px;padding:8px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <label>School
+            <input class="edu-school" type="text" style="width:100%;">
+          </label>
+          <label>Degree
+            <input class="edu-degree" type="text" style="width:100%;" placeholder="B.S.">
+          </label>
+          <label>Field
+            <input class="edu-field" type="text" style="width:100%;" placeholder="Computer Science">
+          </label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <label>Start
+              <input class="edu-start" type="text" style="width:100%;" placeholder="2021-09">
+            </label>
+            <label>End
+              <input class="edu-end" type="text" style="width:100%;" placeholder="2025-06 or Present">
+            </label>
+          </div>
+        </div>
+        <div style="margin-top:6px;text-align:right;">
+          <button type="button" data-remove>Remove</button>
+        </div>
+      </div>
+    </template>
+
+    <template id="workRowTmpl">
+      <div class="row work-row" style="border:1px solid #eee;border-radius:8px;padding:8px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <label>Company
+            <input class="work-company" type="text" style="width:100%;">
+          </label>
+          <label>Role/Title
+            <input class="work-role" type="text" style="width:100%;">
+          </label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <label>Start
+              <input class="work-start" type="text" style="width:100%;" placeholder="2023-05">
+            </label>
+            <label>End
+              <input class="work-end" type="text" style="width:100%;" placeholder="2024-12 or Present">
+            </label>
+          </div>
+        </div>
+        <label style="display:block;margin-top:6px;">Summary
+          <textarea class="work-summary" style="width:100%;height:60px;"></textarea>
+        </label>
+        <div style="margin-top:6px;text-align:right;">
+          <button type="button" data-remove>Remove</button>
+        </div>
+      </div>
+    </template>
 
     <script type="module" src="popup/main.js"></script>
   </body>
