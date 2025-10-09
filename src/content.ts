@@ -103,15 +103,90 @@ function matchKey(el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
  * @returns The property value, or undefined if not found.
  */
 function get(obj: AnyObj, path: string): unknown {
-  if (path === "basics._fullName") {
+  // ---- helpers ----
+  const fullName = () => {
     const first = String(obj?.basics?.firstName ?? "").trim();
     const last  = String(obj?.basics?.lastName  ?? "").trim();
-    const full = [first, last].filter(Boolean).join(" ");
+    const full  = [first, last].filter(Boolean).join(" ");
     return full || undefined;
+  };
+
+  const findLink = (rx: RegExp) =>
+    obj?.links?.find((l: any) => rx.test(l?.label ?? ""))?.url;
+
+  const toTime = (s?: string) => {
+    if (!s) return Number.NEGATIVE_INFINITY;
+    if (/present/i.test(s)) return Number.POSITIVE_INFINITY;
+    const m = String(s).match(/^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?/);
+    if (!m) return Number.NEGATIVE_INFINITY;
+    const y = Number(m[1]), mo = Number(m[2] ?? "01") - 1, d = Number(m[3] ?? "01");
+    return new Date(y, mo, d).getTime();
+  };
+
+  const mostRecentEdu = () => {
+    const arr = Array.isArray(obj?.education) ? (obj.education as any[]) : [];
+    if (!arr.length) return undefined;
+    const scored = arr.map(item => {
+      const start = toTime(item?.start);
+      const end = toTime(item?.end);
+      const ongoing = !item?.end || /present/i.test(item?.end);
+      return { item, start, end, ongoing };
+    });
+    scored.sort((a, b) => {
+      if (a.ongoing !== b.ongoing) return a.ongoing ? -1 : 1; 
+      if (a.end !== b.end) return b.end - a.end;               
+      return b.start - a.start;                                
+    });
+    return scored[0]?.item;
+  };
+
+  const yyyymm = (s?: string) => {
+    if (!s) return s;
+    const m = String(s).match(/^(\d{4})-(\d{2})/);
+    return m ? `${m[1]}-${m[2]}` : s;
+  };
+
+  
+  switch (path) {
+    
+    case "basics._fullName":
+      return fullName();
+
+    case "links.linkedin":
+      return findLink(/linkedin/i);
+    case "links.github":
+      return findLink(/github/i);
+    case "links.website":
+      return findLink(/website|portfolio|personal/i);
+    case "workAuth.usWorkAuthorization":
+      return obj?.demographics?.workAuthorization;
+    case "workAuth.needsSponsorship":
+      return obj?.demographics?.needsSponsorship;
+    case "demographics.race": {
+      const arr = obj?.demographics?.raceEthnicity;
+      return Array.isArray(arr) ? arr : undefined;
+    }
+    case "demographics.veteran":
+      return obj?.demographics?.veteranStatus;
+    case "education.mostRecent.school":
+      return mostRecentEdu()?.school;
+    case "education.mostRecent.degree":
+      return mostRecentEdu()?.degree;
+    case "education.mostRecent.field":
+      return mostRecentEdu()?.field;
+    case "education.mostRecent.start":
+      return yyyymm(mostRecentEdu()?.start);
+    case "education.mostRecent.end": {
+      const val = mostRecentEdu()?.end;
+      return /present/i.test(String(val)) ? "" : yyyymm(val);
+    }
+
+    // Default: direct dot-path lookup
+    default:
+      return path.split(".").reduce<any>((o, k) => o?.[k], obj);
   }
-  // default: read directly
-  return path.split(".").reduce<any>((o, k) => o?.[k], obj);
 }
+
 
 /**
  * Sets the value of a form element. It handles different input types like
@@ -122,26 +197,58 @@ function get(obj: AnyObj, path: string): unknown {
  */
 function setValue(el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement, value: any): boolean {
   if ((el as any).dataset?.userEdited === "1") return false;
-  const v = String(value);
+
   if (el instanceof HTMLInputElement && (el.type === "checkbox" || el.type === "radio")) {
     const group = document.querySelectorAll<HTMLInputElement>(`input[name="${CSS.escape(el.name)}"]`);
-    for (const opt of group) {
-      const txt = norm(labelText(opt) || opt.value);
-      if (txt.includes(norm(v))) { opt.click(); return true; }
+    const want = Array.isArray(value) ? value.map(v => norm(String(v))) : [norm(String(value))];
+
+    let clicked = 0;
+
+   
+    if (el.type === "radio") {
+      for (const target of group) {
+        const lbl = norm(labelText(target) || target.value);
+        if (want.some(w => w === lbl || lbl.includes(w))) {
+          if (!target.checked) target.click();
+          clicked = 1;
+          break;
+        }
+      }
+      return clicked > 0;
+    }
+
+    const desired = new Set(want);
+    for (const target of group) {
+      const lbl = norm(labelText(target) || target.value);
+      const shouldBeChecked = Array.from(desired).some(w => w === lbl || lbl.includes(w));
+      if (target.checked !== shouldBeChecked) {
+        target.click();
+        clicked++;
+      }
+    }
+    return clicked > 0;
+  }
+
+  if (el instanceof HTMLSelectElement) {
+    const v = String(value ?? "").trim();
+    const opts = Array.from(el.options);
+    const exact = opts.find(o => norm(o.value) === norm(v) || norm(o.text) === norm(v));
+    const candidate = exact ?? opts.find(o => norm(o.text).includes(norm(v)));
+    if (candidate) {
+      el.value = candidate.value;
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
     }
     return false;
   }
-  if (el instanceof HTMLSelectElement) {
-    const options = Array.from(el.options);
-    const found = options.find(o => norm(o.text).includes(norm(v)) || norm(o.value) === norm(v));
-    if (found) { el.value = found.value; el.dispatchEvent(new Event("change",{bubbles:true})); return true; }
-    return false;
-  }
-  (el as HTMLInputElement | HTMLTextAreaElement).value = v;
-  el.dispatchEvent(new Event("input",{bubbles:true}));
-  el.dispatchEvent(new Event("change",{bubbles:true}));
+
+  // Text/textarea
+  (el as HTMLInputElement | HTMLTextAreaElement).value = String(value ?? "");
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+  el.dispatchEvent(new Event("change", { bubbles: true }));
   return true;
 }
+
 
 /**
  * Recursively traverses the DOM and any open Shadow DOMs to find all input elements.
@@ -179,9 +286,8 @@ function collectInputsDeep(root: Document | ShadowRoot = document): (HTMLInputEl
  * elements (including those in Shadow DOMs), matches them to keys in the
  * profile, and fills them with the corresponding values.
  * @param profile The user's data profile.
- * @param allowDemo Whether to fill fields marked as "demographics".
  */
-async function fill(profile: AnyObj, allowDemo: boolean) {
+async function fill(profile: AnyObj) {
   const inputs = collectInputsDeep()
     // Filter out hidden elements
      .filter(el => (el as HTMLElement).offsetParent !== null);
@@ -190,8 +296,6 @@ async function fill(profile: AnyObj, allowDemo: boolean) {
     if ((el as any).dataset?.userEdited === "1") continue;
     const key = matchKey(el);
     if (!key) continue;
-    // Skip demographic fields if not allowed
-    if (!allowDemo && key.startsWith("demographics.")) continue;
     const val = get(profile, key);
     if (val == null || val === "") continue;
     // If value is set successfully, highlight the field and increment the counter
@@ -208,14 +312,13 @@ async function fill(profile: AnyObj, allowDemo: boolean) {
  * Creates a debounced version of the fill function. This prevents the fill
  * logic from running too frequently when the DOM is changing rapidly.
  * @param profile The user's data profile.
- * @param allowDemo Whether to fill fields marked as "demographics".
  * @returns A function that, when called, will trigger a fill after a short delay.
  */
-function scheduleFill(profile: AnyObj, allowDemo: boolean) {
+function scheduleFill(profile: AnyObj) {
   let t: number | null = null;
   return () => {
     if (t) window.clearTimeout(t);
-    t = window.setTimeout(() => fill(profile, allowDemo), 150);
+    t = window.setTimeout(() => fill(profile), 150);
   };
 }
 
@@ -227,10 +330,9 @@ let observer: MutationObserver | null = null;
  * This is crucial for handling forms that are loaded dynamically after the
  * initial page load (common in SPAs).
  * @param profile The user's data profile.
- * @param allowDemo Whether to fill fields marked as "demographics".
  */
-function watchForChanges(profile: AnyObj, allowDemo: boolean) {
-  const run = scheduleFill(profile, allowDemo);
+function watchForChanges(profile: AnyObj) {
+  const run = scheduleFill(profile);
   observer?.disconnect();
   observer = new MutationObserver((muts) => {
     if (muts.some(m => m.addedNodes && m.addedNodes.length > 0)) run();
@@ -246,7 +348,7 @@ function watchForChanges(profile: AnyObj, allowDemo: boolean) {
  */
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg?.type !== "FILL_EXECUTE") return;
-  const { profile, allowDemographics } = msg.payload ?? {};
+  const { profile } = msg.payload ?? {};
   // Start watching so SPA/late-loaded forms get filled too
-  watchForChanges(profile, !!allowDemographics);
+  watchForChanges(profile);
 });
