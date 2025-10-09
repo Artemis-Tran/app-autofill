@@ -280,6 +280,52 @@ function collectInputsDeep(root: Document | ShadowRoot = document): (HTMLInputEl
   );
 }
 
+function clearAutofilled() {
+  const els = Array.from(document.querySelectorAll<HTMLElement>('[data-autofilled="1"]'));
+
+  for (const el of els) {
+    el.style.outline = "";
+    el.dataset.autofilled = "";
+
+    if (el instanceof HTMLInputElement) {
+      if (el.type === "checkbox") {
+        if (el.checked) el.click(); 
+        continue;
+      }
+      if (el.type === "radio") {
+       
+        if (el.checked) el.checked = false;
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+        continue;
+      }
+  
+      el.value = "";
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+      continue;
+    }
+
+    if (el instanceof HTMLSelectElement) {
+      if (el.options.length > 0) {
+        el.selectedIndex = 0;
+      } else {
+        (el as any).value = "";
+      }
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+      continue;
+    }
+
+    if (el instanceof HTMLTextAreaElement) {
+      el.value = "";
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+      continue;
+    }
+  }
+
+  chrome.runtime.sendMessage({ type: "FILL_DONE", count: 0 });
+}
+
 
 /**
  * The main autofill function. It uses `collectInputsDeep` to find all form
@@ -300,6 +346,7 @@ async function fill(profile: AnyObj) {
     if (val == null || val === "") continue;
     // If value is set successfully, highlight the field and increment the counter
     if (setValue(el, val)) {
+      (el as HTMLElement).dataset.autofilled = "1";
       (el as HTMLElement).style.outline = "2px solid #f7d560";
       n++;
     }
@@ -347,8 +394,11 @@ function watchForChanges(profile: AnyObj) {
  * starts watching for DOM changes to handle dynamic forms.
  */
 chrome.runtime.onMessage.addListener((msg) => {
-  if (msg?.type !== "FILL_EXECUTE") return;
-  const { profile } = msg.payload ?? {};
-  // Start watching so SPA/late-loaded forms get filled too
-  watchForChanges(profile);
+  if (msg?.type === "FILL_EXECUTE") {
+    const { profile } = msg.payload ?? {};
+    watchForChanges(profile);
+  }
+  else if (msg?.type === "FILL_UNDO") {
+    clearAutofilled();
+  }
 });

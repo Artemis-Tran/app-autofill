@@ -42,6 +42,7 @@ const demoDisability = $("demoDisability") as HTMLSelectElement;
 const jsonArea = $("profileJson") as HTMLTextAreaElement;
 const saveBtn = $("save") as HTMLButtonElement;
 const fillBtn = $("fill") as HTMLButtonElement;
+const undoBtn = $("undo") as HTMLButtonElement;
 const status = $("status") as HTMLDivElement;
 
 // ----- Row factories -----
@@ -128,7 +129,6 @@ function buildProfileFromForm(): Profile {
       postalCode: postalCode.value.trim(),
       country: country.value.trim() || "US",
     },
-    // These keys are optional—ensure your `Profile` type allows them or extend it.
     links,
     education,
     work,
@@ -202,12 +202,11 @@ function fillFormFromProfile(profile: Profile) {
   }));
 }
 
-// ----- Sync helpers -----
 function syncJsonFromForm() {
   try {
     const profile = buildProfileFromForm();
     jsonArea.value = JSON.stringify(profile, null, 2);
-  } catch { /* ignore */ }
+  } catch {}
 }
 function syncFormFromJson() {
   try {
@@ -220,7 +219,6 @@ function syncFormFromJson() {
 }
 function flash(msg: string) { status.textContent = msg; }
 
-// ----- Initial load -----
 (async () => {
   const { profile, allowDemographics } = await loadProfile();
 
@@ -228,7 +226,6 @@ function flash(msg: string) { status.textContent = msg; }
     fillFormFromProfile(profile);
     jsonArea.value = JSON.stringify(profile, null, 2);
   } else {
-    // Start with common defaults
     addLinkRow({ label: "LinkedIn", url: "" });
     addLinkRow({ label: "GitHub", url: "" });
     syncJsonFromForm();
@@ -286,6 +283,21 @@ fillBtn.addEventListener("click", async () => {
   } catch (e) {
     console.error(e);
     flash("Fill failed");
+  }
+});
+
+undoBtn.addEventListener("click", async () => {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.id) {
+      await chrome.tabs.sendMessage(tab.id, { type: "FILL_UNDO" });
+      status.textContent = "Cleared fields I filled.";
+    } else {
+      status.textContent = "Cannot find active tab.";
+    }
+  } catch (e) {
+    console.error(e);
+    status.textContent = "Undo failed";
   }
 });
 
