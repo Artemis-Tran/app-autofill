@@ -21,11 +21,10 @@ This is a browser extension that automatically fills out web forms based on a JS
 ## How to Use
 
 1.  Click on the extension's icon in your browser toolbar to open the popup.
-2.  Paste your JSON profile into the text area. See the [JSON Profile](#json-profile) section for an example.
-3.  Click "Save" to store your profile.
-4.  Navigate to a web page with a form you want to fill.
-5.  Click the "Fill" button in the extension popup.
-6.  The extension will highlight the fields it has filled. Review the highlighted fields to ensure they are correct.
+2.  Click "Save" to store your profile.
+3.  Navigate to a web page with a form you want to fill.
+4.  Click the "Fill" button in the extension popup.
+5.  The extension will highlight the fields it has filled. Review the highlighted fields to ensure they are correct.
 
 ## JSON Profile
 
