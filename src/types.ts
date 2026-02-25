@@ -1,5 +1,5 @@
 export interface Profile {
-  basics: { firstName: string; lastName: string; email?: string; phone?: string; };
+  basics: { firstName: string; lastName: string; email?: string; phone?: string; countryCode?: string; };
   address?: { line1?: string; line2?: string; city?: string; state?: string; postalCode?: string; country?: string; };
   links?: { label: string; url: string; }[];
   education?: { school?: string; degree?: string; field?: string; start?: string; end?: string; }[];

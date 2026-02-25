@@ -4,6 +4,7 @@ export const FIELD_ALIASES: Record<string, RegExp[]> = {
   "basics._fullName": [/full\s*name/i,/\bname\b/i],
   "basics.email":     [/e-?mail|email\s*address/i],
   "basics.phone":     [/^(?!.*(country|code))(?=.*(phone|mobile|cell)).*$/i],
+  "basics.countryCode": [/country\s*code|dial\s*code|phone\s*country\s*code/i],
   "address.line1":    [/address( line)?\s*1|street|addr1/i],
   "address.line2":    [/address( line)?\s*2|apt|suite|unit|addr2/i],
   "address.city":     [/city|town/i],
