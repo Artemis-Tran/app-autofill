@@ -267,7 +267,6 @@ saveBtn.addEventListener("click", async () => {
 
 // Fill current tab
 fillBtn.addEventListener("click", async () => {
-  console.log("hello")
   try {
     const profile = buildProfileFromForm();
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });

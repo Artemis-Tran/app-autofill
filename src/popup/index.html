@@ -1,233 +1,633 @@
 <!doctype html>
-<html>
-  <body style="font-family: system-ui; width: 360px; padding: 12px;">
-    <h3 style="margin:0 0 10px;">Application Autofill</h3>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application Autofill</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f4efe7;
+        --bg-accent: #efe2d0;
+        --surface: rgba(255, 250, 242, 0.92);
+        --surface-strong: #fffdf9;
+        --surface-muted: #f8efe2;
+        --border: rgba(111, 78, 55, 0.14);
+        --border-strong: rgba(111, 78, 55, 0.24);
+        --text: #2c211a;
+        --muted: #756459;
+        --primary: #c35f2d;
+        --primary-strong: #a84d22;
+        --primary-soft: rgba(195, 95, 45, 0.12);
+        --success: #2f7d57;
+        --shadow: 0 18px 40px rgba(82, 55, 34, 0.14);
+        --shadow-soft: 0 8px 24px rgba(82, 55, 34, 0.1);
+        --radius-lg: 22px;
+        --radius-md: 16px;
+        --radius-sm: 12px;
+      }
 
-    <form id="profileForm">
-      <!-- Basics -->
-      <fieldset style="border:1px solid #ddd;padding:8px;border-radius:8px;">
-        <legend style="padding:0 6px;color:#555;">Basics</legend>
-        <label style="display:block;margin-bottom:6px;">
-          First name
-          <input id="firstName" type="text" style="width:100%;">
-        </label>
-        <label style="display:block;margin-bottom:6px;">
-          Last name
-          <input id="lastName" type="text" style="width:100%;">
-        </label>
-        <label style="display:block;margin-bottom:6px;">
-          Email
-          <input id="email" type="email" style="width:100%;">
-        </label>
-        <label style="display:block;margin-bottom:6px;">
-          Phone
-          <input id="phone" type="tel" style="width:100%;">
-        </label>
-      </fieldset>
+      * {
+        box-sizing: border-box;
+      }
 
-      <!-- Address -->
-      <fieldset style="border:1px solid #ddd;padding:8px;margin-top:10px;border-radius:8px;">
-        <legend style="padding:0 6px;color:#555;">Address</legend>
-        <label style="display:block;margin-bottom:6px;">
-          Line 1
-          <input id="line1" type="text" style="width:100%;">
-        </label>
-        <label style="display:block;margin-bottom:6px;">
-          Line 2
-          <input id="line2" type="text" style="width:100%;">
-        </label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <label>
-            City
-            <input id="city" type="text" style="width:100%;">
-          </label>
-          <label>
-            State
-            <input id="state" type="text" style="width:100%;">
-          </label>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;">
-          <label>
-            Postal code
-            <input id="postalCode" type="text" style="width:100%;">
-          </label>
-          <label>
-            Country
-            <input id="country" type="text" style="width:100%;" placeholder="US">
-          </label>
-        </div>
-      </fieldset>
+      html, body {
+        margin: 0;
+      }
 
-      <!-- Links -->
-      <fieldset style="border:1px solid #ddd;padding:8px;margin-top:10px;border-radius:8px;">
-        <legend style="padding:0 6px;color:#555;">Links</legend>
-        <div id="linksContainer" style="display:flex;flex-direction:column;gap:8px;"></div>
-        <button id="addLink" type="button" style="margin-top:6px;">+ Add link</button>
-      </fieldset>
+      body {
+        width: 420px;
+        min-width: 420px;
+        overflow-x: hidden;
+        font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(243, 202, 162, 0.5), transparent 34%),
+          radial-gradient(circle at top right, rgba(196, 140, 89, 0.24), transparent 28%),
+          linear-gradient(180deg, #fcf8f1 0%, var(--bg) 100%);
+      }
 
-      <!-- Education -->
-      <fieldset style="border:1px solid #ddd;padding:8px;margin-top:10px;border-radius:8px;">
-        <legend style="padding:0 6px;color:#555;">Education</legend>
-        <div id="educationContainer" style="display:flex;flex-direction:column;gap:8px;"></div>
-        <button id="addEducation" type="button" style="margin-top:6px;">+ Add education</button>
-      </fieldset>
+      .shell {
+        position: relative;
+        width: 420px;
+        overflow: hidden;
+        padding: 18px;
+      }
 
-      <!-- Work Experience -->
-      <fieldset style="border:1px solid #ddd;padding:8px;margin-top:10px;border-radius:8px;">
-        <legend style="padding:0 6px;color:#555;">Work Experience</legend>
-        <div id="workContainer" style="display:flex;flex-direction:column;gap:8px;"></div>
-        <button id="addWork" type="button" style="margin-top:6px;">+ Add role</button>
-      </fieldset>
-      <!-- Demographics (opt-in via checkbox below) -->
-      <fieldset style="border:1px solid #ddd;padding:8px;margin-top:10px;border-radius:8px;">
-        <legend style="padding:0 6px;color:#555;">Demographics</legend>
+      .shell::before,
+      .shell::after {
+        content: "";
+        position: absolute;
+        border-radius: 999px;
+        pointer-events: none;
+      }
 
-        <label style="display:block;margin-bottom:6px;">
-          Work authorization
-          <select id="demoWorkAuth" style="width:100%;">
-            <option value="">Select</option>
-            <option>U.S. Citizen</option>
-            <option>U.S. Permanent Resident (Green Card)</option>
-            <option>H-1B</option>
-            <option>F-1 (CPT/OPT)</option>
-            <option>Other Visa</option>
-            <option>Not authorized</option>
-          </select>
-        </label>
+      .shell::before {
+        width: 180px;
+        height: 180px;
+        top: -90px;
+        right: -60px;
+        background: rgba(195, 95, 45, 0.12);
+        filter: blur(8px);
+      }
 
-        <label style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
-          <input id="demoNeedsSponsorship" type="checkbox">
-          I will require sponsorship now or in the future
-        </label>
+      .shell::after {
+        width: 120px;
+        height: 120px;
+        bottom: 120px;
+        left: -40px;
+        background: rgba(123, 96, 72, 0.08);
+      }
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <label>Gender
-            <select id="demoGender" style="width:100%;">
-              <option value="">Prefer not to say</option>
-              <option>Male</option>
-              <option>Female</option>
-              <option>Non-binary</option>
-              <option>Transgender</option>
-              <option>Other</option>
-            </select>
-          </label>
-          <label>Pronouns
-            <input id="demoPronouns" type="text" style="width:100%;" placeholder="she/her, he/him, they/them">
-          </label>
-        </div>
+      .panel {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
 
-        <div style="margin-top:6px;">
-          <div style="font-size:12px;color:#666;margin-bottom:4px;">Ethnicity / Race (select all that apply)</div>
-          <div id="demoRaceGroup" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-            <label><input type="checkbox" value="Asian"> Asian</label>
-            <label><input type="checkbox" value="Black or African American"> Black or African American</label>
-            <label><input type="checkbox" value="Hispanic or Latino"> Hispanic or Latino</label>
-            <label><input type="checkbox" value="White"> White</label>
-            <label><input type="checkbox" value="Native Hawaiian or Other Pacific Islander"> Native Hawaiian or Other Pacific Islander</label>
-            <label><input type="checkbox" value="American Indian or Alaska Native"> American Indian or Alaska Native</label>
-            <label><input type="checkbox" value="Middle Eastern or North African"> Middle Eastern or North African</label>
-            <label><input type="checkbox" value="Other"> Other</label>
-            <label><input type="checkbox" value="Prefer not to say"> Prefer not to say</label>
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .section-card,
+      details {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+        box-shadow: var(--shadow-soft);
+        backdrop-filter: blur(10px);
+      }
+
+      fieldset.section-card {
+        margin: 0;
+        padding: 16px;
+      }
+
+      legend {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      .section-title {
+        margin: 0 0 8px;
+        color: var(--primary-strong);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .section-note {
+        margin: 0 0 14px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .grid-2 {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      label,
+      .label-block {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--muted);
+      }
+
+      input,
+      select,
+      textarea,
+      button,
+      summary {
+        font: inherit;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 11px 12px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.84);
+        color: var(--text);
+        transition: border-color 140ms ease, box-shadow 140ms ease, background 140ms ease;
+      }
+
+      textarea {
+        min-height: 74px;
+        resize: vertical;
+      }
+
+      input::placeholder,
+      textarea::placeholder {
+        color: #a08b7d;
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: none;
+        border-color: rgba(195, 95, 45, 0.5);
+        box-shadow: 0 0 0 4px rgba(195, 95, 45, 0.12);
+        background: #fff;
+      }
+
+      .checkline {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: rgba(255, 255, 255, 0.58);
+        color: var(--text);
+      }
+
+      .checkline input {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        accent-color: var(--primary);
+      }
+
+      .race-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .race-grid label {
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.52);
+        color: var(--text);
+        font-weight: 500;
+      }
+
+      .race-grid input {
+        width: 15px;
+        height: 15px;
+        margin: 0;
+        accent-color: var(--primary);
+      }
+
+      .collection {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .row {
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 12px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(248, 239, 226, 0.72));
+      }
+
+      .row-grid {
+        display: grid;
+        gap: 10px;
+      }
+
+      .row-grid.compact-3 {
+        grid-template-columns: 1fr 1.4fr auto;
+        align-items: end;
+      }
+
+      .actions-inline {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 8px;
+      }
+
+      button {
+        border: 0;
+        border-radius: 999px;
+        padding: 11px 14px;
+        cursor: pointer;
+        transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease, opacity 140ms ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+      }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      .ghost-button,
+      button[data-remove] {
+        background: rgba(110, 84, 65, 0.09);
+        color: var(--text);
+      }
+
+      .ghost-button:hover,
+      button[data-remove]:hover {
+        background: rgba(110, 84, 65, 0.14);
+      }
+
+      .plus-button {
+        align-self: flex-start;
+        background: var(--primary-soft);
+        color: var(--primary-strong);
+        font-weight: 700;
+      }
+
+      .plus-button:hover {
+        background: rgba(195, 95, 45, 0.18);
+      }
+
+      .toolbar {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 10px;
+      }
+
+      .primary-button {
+        background: linear-gradient(135deg, var(--primary), #dd8456);
+        color: #fff9f4;
+        box-shadow: 0 12px 22px rgba(195, 95, 45, 0.22);
+      }
+
+      .primary-button:hover {
+        background: linear-gradient(135deg, var(--primary-strong), #d27341);
+      }
+
+      .secondary-button {
+        background: rgba(255, 255, 255, 0.74);
+        color: var(--text);
+        border: 1px solid var(--border);
+      }
+
+      details {
+        overflow: hidden;
+      }
+
+      summary {
+        list-style: none;
+        cursor: pointer;
+        padding: 16px 18px;
+        font-weight: 700;
+      }
+
+      summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .details-body {
+        padding: 0 16px 16px;
+      }
+
+      .details-hint {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      #profileJson {
+        min-height: 160px;
+        font-family: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+      }
+
+      #status {
+        min-height: 20px;
+        padding: 0 4px 2px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="panel">
+        <form id="profileForm">
+          <div class="toolbar">
+            <button id="save" class="secondary-button" type="button">Save</button>
+            <button id="fill" class="primary-button" type="button">Fill this page</button>
+            <button id="undo" class="ghost-button" type="button">Undo</button>
           </div>
-        </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;">
-          <label>Veteran status
-            <select id="demoVeteran" style="width:100%;">
-              <option value="">Prefer not to say</option>
-              <option>Not a protected veteran</option>
-              <option>Protected veteran</option>
-            </select>
-          </label>
-          <label>Disability
-            <select id="demoDisability" style="width:100%;">
-              <option value="">Prefer not to say</option>
-              <option>No disability</option>
-              <option>Has a disability</option>
-            </select>
-          </label>
-        </div>
-      </fieldset>
+          <fieldset class="section-card">
+            <legend>Basics</legend>
+            <h2 class="section-title">Basics</h2>
+            <p class="section-note">The essentials most application flows ask for first.</p>
+            <div class="stack">
+              <label>
+                First name
+                <input id="firstName" type="text">
+              </label>
+              <label>
+                Last name
+                <input id="lastName" type="text">
+              </label>
+              <label>
+                Email
+                <input id="email" type="email">
+              </label>
+              <label>
+                Phone
+                <input id="phone" type="tel">
+              </label>
+            </div>
+          </fieldset>
 
-      <details style="margin-top:10px;">
-        <summary style="cursor:pointer;">Advanced JSON (syncs with form)</summary>
-        <textarea id="profileJson" style="width:100%;height:140px;margin-top:8px;font-family:ui-monospace, SFMono-Regular, Menlo, monospace;"></textarea>
-        <div style="font-size:12px;color:#777;margin-top:4px;">Edits here will update the form on blur.</div>
-      </details>
+          <fieldset class="section-card">
+            <legend>Address</legend>
+            <h2 class="section-title">Address</h2>
+            <p class="section-note">Structured so city, state, and postal code stay easy to scan.</p>
+            <div class="stack">
+              <label>
+                Line 1
+                <input id="line1" type="text">
+              </label>
+              <label>
+                Line 2
+                <input id="line2" type="text">
+              </label>
+              <div class="grid-2">
+                <label>
+                  City
+                  <input id="city" type="text">
+                </label>
+                <label>
+                  State
+                  <input id="state" type="text">
+                </label>
+              </div>
+              <div class="grid-2">
+                <label>
+                  Postal code
+                  <input id="postalCode" type="text">
+                </label>
+                <label>
+                  Country
+                  <input id="country" type="text" placeholder="US">
+                </label>
+              </div>
+            </div>
+          </fieldset>
 
-      <div style="display:flex;gap:8px;margin-top:10px;">
-        <button id="save" type="button">Save</button>
-        <button id="fill" type="button">Fill this page</button>
-        <button id="undo" type="button">Undo</button>
+          <fieldset class="section-card">
+            <legend>Links</legend>
+            <h2 class="section-title">Links</h2>
+            <p class="section-note">Store the profiles recruiters and applicant systems ask for most often.</p>
+            <div id="linksContainer" class="collection"></div>
+            <button id="addLink" class="plus-button" type="button">+ Add link</button>
+          </fieldset>
+
+          <fieldset class="section-card">
+            <legend>Education</legend>
+            <h2 class="section-title">Education</h2>
+            <p class="section-note">Add one or more schools so repeated forms stay consistent.</p>
+            <div id="educationContainer" class="collection"></div>
+            <button id="addEducation" class="plus-button" type="button">+ Add education</button>
+          </fieldset>
+
+          <fieldset class="section-card">
+            <legend>Work Experience</legend>
+            <h2 class="section-title">Work Experience</h2>
+            <p class="section-note">Capture the roles and summaries you reuse across applications.</p>
+            <div id="workContainer" class="collection"></div>
+            <button id="addWork" class="plus-button" type="button">+ Add role</button>
+          </fieldset>
+
+          <fieldset class="section-card">
+            <legend>Demographics</legend>
+            <h2 class="section-title">Demographics</h2>
+            <p class="section-note">Optional details for applications that include compliance questions.</p>
+
+            <div class="stack">
+              <label>
+                Work authorization
+                <select id="demoWorkAuth">
+                  <option value="">Select</option>
+                  <option>U.S. Citizen</option>
+                  <option>U.S. Permanent Resident (Green Card)</option>
+                  <option>H-1B</option>
+                  <option>F-1 (CPT/OPT)</option>
+                  <option>Other Visa</option>
+                  <option>Not authorized</option>
+                </select>
+              </label>
+
+              <label class="checkline">
+                <input id="demoNeedsSponsorship" type="checkbox">
+                <span>I will require sponsorship now or in the future</span>
+              </label>
+
+              <div class="grid-2">
+                <label>
+                  Gender
+                  <select id="demoGender">
+                    <option value="">Prefer not to say</option>
+                    <option>Male</option>
+                    <option>Female</option>
+                    <option>Non-binary</option>
+                    <option>Transgender</option>
+                    <option>Other</option>
+                  </select>
+                </label>
+                <label>
+                  Pronouns
+                  <input id="demoPronouns" type="text" placeholder="she/her, he/him, they/them">
+                </label>
+              </div>
+
+              <div class="label-block">
+                <span>Ethnicity / Race (select all that apply)</span>
+                <div id="demoRaceGroup" class="race-grid">
+                  <label><input type="checkbox" value="Asian">Asian</label>
+                  <label><input type="checkbox" value="Black or African American">Black or African American</label>
+                  <label><input type="checkbox" value="Hispanic or Latino">Hispanic or Latino</label>
+                  <label><input type="checkbox" value="White">White</label>
+                  <label><input type="checkbox" value="Native Hawaiian or Other Pacific Islander">Native Hawaiian or Other Pacific Islander</label>
+                  <label><input type="checkbox" value="American Indian or Alaska Native">American Indian or Alaska Native</label>
+                  <label><input type="checkbox" value="Middle Eastern or North African">Middle Eastern or North African</label>
+                  <label><input type="checkbox" value="Other">Other</label>
+                  <label><input type="checkbox" value="Prefer not to say">Prefer not to say</label>
+                </div>
+              </div>
+
+              <div class="grid-2">
+                <label>
+                  Veteran status
+                  <select id="demoVeteran">
+                    <option value="">Prefer not to say</option>
+                    <option>Not a protected veteran</option>
+                    <option>Protected veteran</option>
+                  </select>
+                </label>
+                <label>
+                  Disability
+                  <select id="demoDisability">
+                    <option value="">Prefer not to say</option>
+                    <option>No disability</option>
+                    <option>Has a disability</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+          </fieldset>
+
+          <details>
+            <summary>Advanced JSON</summary>
+            <div class="details-body">
+              <textarea id="profileJson"></textarea>
+              <div class="details-hint">Edits here stay synced back to the form when the field loses focus.</div>
+            </div>
+          </details>
+        </form>
+
+        <div id="status"></div>
       </div>
-    </form>
+    </div>
 
-    <div id="status" style="margin-top:8px;color:#555;"></div>
-
-    <!-- Row templates -->
     <template id="linkRowTmpl">
-      <div class="row link-row" style="border:1px solid #eee;border-radius:8px;padding:8px;">
-        <div style="display:grid;grid-template-columns:1fr 2fr auto;gap:8px;align-items:end;">
-          <label>Label
-            <input class="link-label" type="text" style="width:100%;" placeholder="LinkedIn">
+      <div class="row link-row">
+        <div class="row-grid compact-3">
+          <label>
+            Label
+            <input class="link-label" type="text" placeholder="LinkedIn">
           </label>
-          <label>URL
-            <input class="link-url" type="url" style="width:100%;" placeholder="https://…">
+          <label>
+            URL
+            <input class="link-url" type="url" placeholder="https://...">
           </label>
-          <button type="button" data-remove style="height:32px;">Remove</button>
+          <button type="button" data-remove>Remove</button>
         </div>
       </div>
     </template>
 
     <template id="eduRowTmpl">
-      <div class="row edu-row" style="border:1px solid #eee;border-radius:8px;padding:8px;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <label>School
-            <input class="edu-school" type="text" style="width:100%;">
+      <div class="row edu-row">
+        <div class="row-grid grid-2">
+          <label>
+            School
+            <input class="edu-school" type="text">
           </label>
-          <label>Degree
-            <input class="edu-degree" type="text" style="width:100%;" placeholder="B.S.">
+          <label>
+            Degree
+            <input class="edu-degree" type="text" placeholder="B.S.">
           </label>
-          <label>Field
-            <input class="edu-field" type="text" style="width:100%;" placeholder="Computer Science">
+          <label>
+            Field
+            <input class="edu-field" type="text" placeholder="Computer Science">
           </label>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <label>Start
-              <input class="edu-start" type="text" style="width:100%;" placeholder="2021-09">
+          <div class="grid-2">
+            <label>
+              Start
+              <input class="edu-start" type="text" placeholder="2021-09">
             </label>
-            <label>End
-              <input class="edu-end" type="text" style="width:100%;" placeholder="2025-06 or Present">
+            <label>
+              End
+              <input class="edu-end" type="text" placeholder="2025-06 or Present">
             </label>
           </div>
         </div>
-        <div style="margin-top:6px;text-align:right;">
+        <div class="actions-inline">
           <button type="button" data-remove>Remove</button>
         </div>
       </div>
     </template>
 
     <template id="workRowTmpl">
-      <div class="row work-row" style="border:1px solid #eee;border-radius:8px;padding:8px;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <label>Company
-            <input class="work-company" type="text" style="width:100%;">
+      <div class="row work-row">
+        <div class="row-grid grid-2">
+          <label>
+            Company
+            <input class="work-company" type="text">
           </label>
-          <label>Role/Title
-            <input class="work-role" type="text" style="width:100%;">
+          <label>
+            Role/Title
+            <input class="work-role" type="text">
           </label>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <label>Start
-              <input class="work-start" type="text" style="width:100%;" placeholder="2023-05">
+          <div class="grid-2">
+            <label>
+              Start
+              <input class="work-start" type="text" placeholder="2023-05">
             </label>
-            <label>End
-              <input class="work-end" type="text" style="width:100%;" placeholder="2024-12 or Present">
+            <label>
+              End
+              <input class="work-end" type="text" placeholder="2024-12 or Present">
             </label>
           </div>
         </div>
-        <label style="display:block;margin-top:6px;">Summary
-          <textarea class="work-summary" style="width:100%;height:60px;"></textarea>
+        <label style="margin-top: 10px;">
+          Summary
+          <textarea class="work-summary"></textarea>
         </label>
-        <div style="margin-top:6px;text-align:right;">
+        <div class="actions-inline">
           <button type="button" data-remove>Remove</button>
         </div>
       </div>
