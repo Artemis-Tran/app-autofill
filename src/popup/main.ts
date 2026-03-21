@@ -5,6 +5,7 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 
 // Basics / Address
 const firstName = $("firstName") as HTMLInputElement;
+const preferredName = $("preferredName") as HTMLInputElement;
 const lastName = $("lastName") as HTMLInputElement;
 const email = $("email") as HTMLInputElement;
 const phone = $("phone") as HTMLInputElement;
@@ -117,6 +118,7 @@ function buildProfileFromForm(): Profile {
   const profile: Profile = {
     basics: {
       firstName: firstName.value.trim(),
+      preferredName: preferredName.value.trim() || undefined,
       lastName: lastName.value.trim(),
       email: email.value.trim(),
       phone: phone.value.trim(),
@@ -168,6 +170,7 @@ function fillFormFromProfile(profile: Profile) {
   const d = (profile as any).demographics ?? {};
 
   firstName.value = b.firstName ?? "";
+  preferredName.value = b.preferredName ?? "";
   lastName.value  = b.lastName ?? "";
   email.value     = b.email ?? "";
   phone.value     = b.phone ?? "";
@@ -234,7 +237,7 @@ function flash(msg: string) { status.textContent = msg; }
 
 // Live sync inputs → JSON
 [
-  firstName, lastName, email, phone,
+  firstName, preferredName, lastName, email, phone,
   line1, line2, city, state, postalCode, country,
   demoWorkAuth, demoNeedsSponsorship, demoGender, demoPronouns,
   demoVeteran, demoDisability

@@ -1,5 +1,6 @@
 export const FIELD_ALIASES: Record<string, RegExp[]> = {
-  "basics.firstName": [/first\s*name|given\s*name|\bfname\b/i],
+  "basics.preferredName": [/preferred\s*name|chosen\s*name|nickname/i],
+  "basics.firstName": [/^(?!.*preferred)(?!.*chosen)(?!.*nick)(?=.*(first\s*name|given\s*name|\bfname\b)).*$/i],
   "basics.lastName":  [/last\s*name|family\s*name|\blname\b/i],
   "basics._fullName": [/full\s*name/i,/\bname\b/i],
   "basics.email":     [/e-?mail|email\s*address/i],
