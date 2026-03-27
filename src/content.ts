@@ -6,6 +6,7 @@
  */
 
 import { FIELD_ALIASES } from "./aliases";
+import { findBestSelectOption } from "./selectMatcher";
 
 type AnyObj = Record<string, any>;
 
@@ -231,11 +232,9 @@ function setValue(el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
 
   if (el instanceof HTMLSelectElement) {
     const v = String(value ?? "").trim();
-    const opts = Array.from(el.options);
-    const exact = opts.find(o => norm(o.value) === norm(v) || norm(o.text) === norm(v));
-    const candidate = exact ?? opts.find(o => norm(o.text).includes(norm(v)));
+    const candidate = findBestSelectOption(el.options, v);
     if (candidate) {
-      el.value = candidate.value;
+      el.value = candidate.value ?? "";
       el.dispatchEvent(new Event("change", { bubbles: true }));
       return true;
     }
