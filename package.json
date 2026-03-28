@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "build": "shx rm -rf dist && esbuild src/background.ts src/content.ts src/popup/main.ts --bundle --outdir=dist --target=chrome120 && shx cp src/manifest.json dist/ && shx cp src/popup/index.html dist/popup.html && shx mkdir -p dist/icons && shx cp assets/icons/* dist/icons/",
     "dev": "npm run build -- --watch",
     "zip": "cd dist && shx rm -f ../app-autofill.zip && zip -r ../app-autofill.zip ."
@@ -17,6 +18,7 @@
     "@types/chrome": "^0.1.12",
     "esbuild": "^0.25.10",
     "shx": "^0.4.0",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
   }
 }
