@@ -6,6 +6,7 @@
  */
 
 import { FIELD_ALIASES } from "./aliases";
+import { isScriptedChangeInProgress, runWithScriptedChange } from "./editTracking";
 import { getProfileValue } from "./profileLookup";
 import { findBestSelectOption } from "./selectMatcher";
 
@@ -26,10 +27,12 @@ function isFormEl(n: any): n is HTMLInputElement|HTMLSelectElement|HTMLTextAreaE
 
 document.addEventListener("input", (e) => {
   const t = e.target as any;
+  if (isScriptedChangeInProgress()) return;
   if (isFormEl(t)) { t.dataset.userEdited = "1"; t.dataset.autofilled = ""; }
 }, true);
 document.addEventListener("change", (e) => {
   const t = e.target as any;
+  if (isScriptedChangeInProgress()) return;
   if (isFormEl(t)) { t.dataset.userEdited = "1"; t.dataset.autofilled = ""; }
 }, true);
 
@@ -108,53 +111,54 @@ function matchKey(el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
 function setValue(el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement, value: any): boolean {
   if ((el as any).dataset?.userEdited === "1") return false;
 
-  if (el instanceof HTMLInputElement && (el.type === "checkbox" || el.type === "radio")) {
-    const group = document.querySelectorAll<HTMLInputElement>(`input[name="${CSS.escape(el.name)}"]`);
-    const want = Array.isArray(value) ? value.map(v => norm(String(v))) : [norm(String(value))];
+  return runWithScriptedChange(() => {
+    if (el instanceof HTMLInputElement && (el.type === "checkbox" || el.type === "radio")) {
+      const group = document.querySelectorAll<HTMLInputElement>(`input[name="${CSS.escape(el.name)}"]`);
+      const want = Array.isArray(value) ? value.map(v => norm(String(v))) : [norm(String(value))];
 
-    let clicked = 0;
+      let clicked = 0;
 
-   
-    if (el.type === "radio") {
+      if (el.type === "radio") {
+        for (const target of group) {
+          const lbl = norm(labelText(target) || target.value);
+          if (want.some(w => w === lbl || lbl.includes(w))) {
+            if (!target.checked) target.click();
+            clicked = 1;
+            break;
+          }
+        }
+        return clicked > 0;
+      }
+
+      const desired = new Set(want);
       for (const target of group) {
         const lbl = norm(labelText(target) || target.value);
-        if (want.some(w => w === lbl || lbl.includes(w))) {
-          if (!target.checked) target.click();
-          clicked = 1;
-          break;
+        const shouldBeChecked = Array.from(desired).some(w => w === lbl || lbl.includes(w));
+        if (target.checked !== shouldBeChecked) {
+          target.click();
+          clicked++;
         }
       }
       return clicked > 0;
     }
 
-    const desired = new Set(want);
-    for (const target of group) {
-      const lbl = norm(labelText(target) || target.value);
-      const shouldBeChecked = Array.from(desired).some(w => w === lbl || lbl.includes(w));
-      if (target.checked !== shouldBeChecked) {
-        target.click();
-        clicked++;
+    if (el instanceof HTMLSelectElement) {
+      const v = String(value ?? "").trim();
+      const candidate = findBestSelectOption(el.options, v);
+      if (candidate) {
+        el.value = candidate.value ?? "";
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+        return true;
       }
+      return false;
     }
-    return clicked > 0;
-  }
 
-  if (el instanceof HTMLSelectElement) {
-    const v = String(value ?? "").trim();
-    const candidate = findBestSelectOption(el.options, v);
-    if (candidate) {
-      el.value = candidate.value ?? "";
-      el.dispatchEvent(new Event("change", { bubbles: true }));
-      return true;
-    }
-    return false;
-  }
-
-  // Text/textarea
-  (el as HTMLInputElement | HTMLTextAreaElement).value = String(value ?? "");
-  el.dispatchEvent(new Event("input", { bubbles: true }));
-  el.dispatchEvent(new Event("change", { bubbles: true }));
-  return true;
+    // Text/textarea
+    (el as HTMLInputElement | HTMLTextAreaElement).value = String(value ?? "");
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+    return true;
+  });
 }
 
 
@@ -191,45 +195,47 @@ function collectInputsDeep(root: Document | ShadowRoot = document): (HTMLInputEl
 function clearAutofilled() {
   const els = Array.from(document.querySelectorAll<HTMLElement>('[data-autofilled="1"]'));
 
-  for (const el of els) {
-    el.style.outline = "";
-    el.dataset.autofilled = "";
+  runWithScriptedChange(() => {
+    for (const el of els) {
+      el.style.outline = "";
+      el.dataset.autofilled = "";
+      el.dataset.userEdited = "";
 
-    if (el instanceof HTMLInputElement) {
-      if (el.type === "checkbox") {
-        if (el.checked) el.click(); 
-        continue;
-      }
-      if (el.type === "radio") {
-       
-        if (el.checked) el.checked = false;
+      if (el instanceof HTMLInputElement) {
+        if (el.type === "checkbox") {
+          if (el.checked) el.click();
+          continue;
+        }
+        if (el.type === "radio") {
+          if (el.checked) el.checked = false;
+          el.dispatchEvent(new Event("change", { bubbles: true }));
+          continue;
+        }
+
+        el.value = "";
+        el.dispatchEvent(new Event("input", { bubbles: true }));
         el.dispatchEvent(new Event("change", { bubbles: true }));
         continue;
       }
-  
-      el.value = "";
-      el.dispatchEvent(new Event("input", { bubbles: true }));
-      el.dispatchEvent(new Event("change", { bubbles: true }));
-      continue;
-    }
 
-    if (el instanceof HTMLSelectElement) {
-      if (el.options.length > 0) {
-        el.selectedIndex = 0;
-      } else {
-        (el as any).value = "";
+      if (el instanceof HTMLSelectElement) {
+        if (el.options.length > 0) {
+          el.selectedIndex = 0;
+        } else {
+          (el as any).value = "";
+        }
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+        continue;
       }
-      el.dispatchEvent(new Event("change", { bubbles: true }));
-      continue;
-    }
 
-    if (el instanceof HTMLTextAreaElement) {
-      el.value = "";
-      el.dispatchEvent(new Event("input", { bubbles: true }));
-      el.dispatchEvent(new Event("change", { bubbles: true }));
-      continue;
+      if (el instanceof HTMLTextAreaElement) {
+        el.value = "";
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+        continue;
+      }
     }
-  }
+  });
 
   chrome.runtime.sendMessage({ type: "FILL_DONE", count: 0 });
 }
